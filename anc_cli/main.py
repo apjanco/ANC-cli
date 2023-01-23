@@ -24,15 +24,11 @@ for departamento in departamentos:
     place_matcher.add('departamento_'+departamento, [pattern])
 
 terms = settings['terms']
-api_key = os.getenv('APIKEY')
+api_key = settings['APIKEY']
 
 language = settings['language']
 output_dir = Path('anc_cli/output')
 existing_data = [f.stem for f in output_dir.iterdir()]
-
-@app.command() 
-def update_api_key(api_key:str):
-    os.environ['APIKEY'] = api_key
 
 @app.command()
 def process(pdf_directory:str, force: bool = typer.Option(False, "--force", help='Ignore existing data and create new.')):
