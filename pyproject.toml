@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "ANC-cli"
+version = "0.1.0"
+description = ""
+authors = ["apjanco <apjanco@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.scripts]
+ANC = "anc_cli.main:app"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+typer = {extras = ["all"], version = "^0.7.0"}
+spacy = "^3.5.0"
+PyYAML = "^6.0"
+pandas = "^1.5.3"
+google-api-python-client = "^2.73.0"
+pdf2image = "^1.16.2"
+fuzzysearch = "^0.7.3"
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.2"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
