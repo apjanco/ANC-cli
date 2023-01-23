@@ -8,6 +8,7 @@ from googleapiclient.discovery import build
 from pdf2image import convert_from_path
 from PIL import Image
 from fuzzysearch import find_near_matches
+from rich import print 
 
 type_ =  'DOCUMENT_TEXT_DETECTION'
 
@@ -134,8 +135,8 @@ def pdf_to_data(path:str, language:str, APIKEY:str):
             })
             responses = request.execute(num_retries=3)
             responses['page'] = i
-            responses['filename'] = path
+            responses['filename'] = str(path)
             data.append(responses)
         return data
     else:
-        typer.echo(f"Please set the API key.")
+        print(f"[red] Please set the API key. [/red]")

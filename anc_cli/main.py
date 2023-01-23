@@ -6,9 +6,12 @@ from anc_cli.utils import *
 import spacy
 from spacy.matcher import Matcher
 import yaml
-import os
+from rich import print
 
 settings = yaml.load(Path('anc_cli/settings.yml').read_text(), Loader=yaml.Loader)
+api_key = yaml.load(Path('anc_cli/apikey.yml').read_text(), Loader=yaml.Loader)
+api_key = api_key["APIKEY"]
+
 app = typer.Typer()
 nlp = spacy.blank(settings['language'])
 
@@ -24,7 +27,6 @@ for departamento in departamentos:
     place_matcher.add('departamento_'+departamento, [pattern])
 
 terms = settings['terms']
-api_key = settings['APIKEY']
 
 language = settings['language']
 output_dir = Path('anc_cli/output')
@@ -34,14 +36,18 @@ existing_data = [f.stem for f in output_dir.iterdir()]
 def process(pdf_directory:str, force: bool = typer.Option(False, "--force", help='Ignore existing data and create new.')):
     pdf_directory = Path(pdf_directory)
     if pdf_directory.exists():
+        print(f"[green] Processing {len(list(pdf_directory.iterdir()))} file [/green]")
+
         data = []
         for i, file_ in enumerate(pdf_directory.iterdir()):
             if file_.suffix == '.pdf' and file_.stem not in existing_data:
-                data.extend(pdf_to_data(file_, language, api_key))
+                json_response = pdf_to_data(file_, language, api_key)
+                out_path = str((output_dir / f"{file_.stem}_{i}.json"))
+                srsly.write_json(out_path, json_response)
+                data.extend(json_response)
             elif file_.suffix == '.pdf' and file_.stem not in existing_data and force:
                 typer.echo(f"Processing {len(data)} pages")
 
-        typer.echo(f"Processing {len(data)} pages")
 
         doc_w_term = []
         doc_places = {}

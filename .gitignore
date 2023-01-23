@@ -1,2 +1,3 @@
 anc_cli/settings.yml
 anc_cli/apikey.yml
+*.pyc
