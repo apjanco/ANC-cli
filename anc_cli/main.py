@@ -6,6 +6,7 @@ from anc_cli.utils import *
 import spacy
 from spacy.matcher import Matcher
 import yaml
+import os
 
 settings = yaml.load(Path('anc_cli/settings.yml').read_text(), Loader=yaml.Loader)
 app = typer.Typer()
@@ -23,10 +24,15 @@ for departamento in departamentos:
     place_matcher.add('departamento_'+departamento, [pattern])
 
 terms = settings['terms']
-api_key = settings['APIKEY']
+api_key = os.getenv('APIKEY')
+
 language = settings['language']
 output_dir = Path('anc_cli/output')
 existing_data = [f.stem for f in output_dir.iterdir()]
+
+@app.command() 
+def update_api_key(api_key:str):
+    os.environ['APIKEY'] = api_key
 
 @app.command()
 def process(pdf_directory:str, force: bool = typer.Option(False, "--force", help='Ignore existing data and create new.')):
@@ -35,7 +41,7 @@ def process(pdf_directory:str, force: bool = typer.Option(False, "--force", help
         data = []
         for i, file_ in enumerate(pdf_directory.iterdir()):
             if file_.suffix == '.pdf' and file_.stem not in existing_data:
-                data.extend(pdf_to_data(file_, language))
+                data.extend(pdf_to_data(file_, language, api_key))
             elif file_.suffix == '.pdf' and file_.stem not in existing_data and force:
                 typer.echo(f"Processing {len(data)} pages")
 

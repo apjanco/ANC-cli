@@ -1,6 +1,7 @@
 import base64
 import io
 import os
+import typer
 from pathlib import Path
 import pandas as pd 
 from googleapiclient.discovery import build
@@ -112,26 +113,29 @@ def has_terms(text:str):
   return False
 
 def pdf_to_data(path:str, language:str, APIKEY:str):
-  images = convert_from_path(path)
-  data = []
-  for i, image in enumerate(images):
-    #Path(f'image{i}.jpg').write_bytes(image_to_byte_array(image))
-    image_content = base64.b64encode(image_to_byte_array(image))
-    vservice = build('vision', 'v1', developerKey=APIKEY)
-    request = vservice.images().annotate(body={
+    if APIKEY:
+        images = convert_from_path(path)
+        data = []
+        for i, image in enumerate(images):
+            #Path(f'image{i}.jpg').write_bytes(image_to_byte_array(image))
+            image_content = base64.b64encode(image_to_byte_array(image))
+            vservice = build('vision', 'v1', developerKey=APIKEY)
+            request = vservice.images().annotate(body={
                 'requests': [{
-                            'image': {
-                                        'content': image_content.decode('UTF-8')
-                                    },
-                            'imageContext': {
-                                        'languageHints': [language]},
-                                        'features': [{
+                    'image': {
+                        'content': image_content.decode('UTF-8')
+                    },
+                    'imageContext': {
+                        'languageHints': [language]},
+                        'features': [{
                             'type': type_
-                                        }]
-                                        }]
-                    })
-    responses = request.execute(num_retries=3)
-    responses['page'] = i
-    responses['filename'] = path
-    data.append(responses)
-  return data
+                        }]
+                }]
+            })
+            responses = request.execute(num_retries=3)
+            responses['page'] = i
+            responses['filename'] = path
+            data.append(responses)
+        return data
+    else:
+        typer.echo(f"Please set the API key.")
