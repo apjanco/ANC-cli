@@ -5,4 +5,6 @@
 
 ## Installation
 
+`git clone https://github.com/apjanco/ANC-cli.git` 
+
 ## Usage

@@ -18,6 +18,7 @@ nlp = spacy.blank(settings['language'])
 municipio_names = srsly.read_json('anc_cli/data/municipios.json')
 departamentos = srsly.read_json('anc_cli/data/departamentos.json')
 
+
 place_matcher = Matcher(nlp.vocab)
 for municipio in municipio_names:
     pattern = [{"LOWER": {"FUZZY": f"{m}"}} for m in nlp(municipio)]
@@ -30,6 +31,8 @@ terms = settings['terms']
 
 language = settings['language']
 output_dir = Path('anc_cli/output')
+if not output_dir.exists():
+    output_dir.mkdir(parents=True, exist_ok=True)
 existing_data = [f.stem for f in output_dir.iterdir()]
 
 @app.command()
@@ -54,7 +57,7 @@ def process(pdf_directory:str, force: bool = typer.Option(False, "--force", help
         output = []
         if data:
             for index, page in enumerate(data):
-                typer.echo(f"Processing page {index}")
+                typer.echo(f"Processing page {index + 1}")
                 for response in page['responses']:
                     for i, annotation in enumerate(response['textAnnotations']):
                         if i == 0:
@@ -63,16 +66,17 @@ def process(pdf_directory:str, force: bool = typer.Option(False, "--force", help
                             doc = nlp(full_text)
                             term_matcher = Matcher(nlp.vocab)
                             for term in terms:
-                                term_matcher.add(term.upper(), [nlp(term)])
+                                pattern = [{"LOWER": {"FUZZY": f"{m}"}} for m in nlp(term)]
+                                term_matcher.add(term, [pattern])
 
                             matches = term_matcher(doc)
-                            terms_found = [match_id for match_id, start, end, ratio in matches if ratio > match_ratio]
+                            terms_found = [match_id for match_id, start, end in matches]
                     
                         if terms_found:
                             doc_w_term.append(i)
                             matches = place_matcher(doc)
-                            spans = [doc[start:end] for match_id, start, end, ratio in matches if ratio > match_ratio]
-                            match_ids = [match_id for match_id, start, end, ratio in matches if ratio > match_ratio]
+                            spans = [doc[start:end] for match_id, start, end in matches]
+                            match_ids = [match_id for match_id, start, end in matches]
                             doc_places[i] = [dict(index=i,start=span.start_char, end=span.end_char, text=span.text, match_id=match_id) for span, match_id in zip(spacy.util.filter_spans(spans), match_ids)]
                         
                     
@@ -90,18 +94,23 @@ def process(pdf_directory:str, force: bool = typer.Option(False, "--force", help
                                 doc = nlp(f"{result['prior_word']} {result['value']} {result['next_word']}")
                                 span_matches = place_matcher(doc)
                                 for token_match, span_match in zip(token_matches, span_matches):
-                                    if token_match[3] > match_ratio or span_match[3] > match_ratio:
-                                        #ex. has span ('departamento_cauca', 0, 1, 100) ('departamento_valle del cauca', 0, 2, 75)
-                                        #ex. not span ('municipio_barranquilla', 0, 1, 100) ('departamento_atlántico', 0, 1, 89)
-                                        token_term = token_match[0].split("_")[0]
-                                        span_term = span_match[0].split("_")[0]
-                                        m = {}
-                                        if span_term == token_term:
-                                            m['match_term'] = span_term.title()
-                                            m['match_name'] = span_match[0].split("_")[1].title().replace('Del','del')
-                                        else:
-                                            m['match_term'] = token_term.title()
-                                            m['match_name'] = token_match[0].split("_")[1].title().replace('Del','del')
+                                    
+                                    #ex. has span ('departamento_cauca', 0, 1, 100) ('departamento_valle del cauca', 0, 2, 75)
+                                    #ex. not span ('municipio_barranquilla', 0, 1, 100) ('departamento_atlántico', 0, 1, 89)
+                                    string_id = nlp.vocab.strings[token_match[0]]
+                                    token_term = string_id.split("_")[0]
+
+                                    string_id = nlp.vocab.strings[span_match[0]]
+                                    span_term = string_id.split("_")[0]
+                                    m = {}
+                                    if span_term == token_term:
+                                        m['match_term'] = span_term.title()
+                                        string_id = nlp.vocab.strings[span_match[0]]
+                                        m['match_name'] = string_id.split("_")[1].title().replace('Del','del')
+                                    else:
+                                        m['match_term'] = token_term.title()
+                                        string_id = nlp.vocab.strings[token_match[0]]
+                                        m['match_name'] = string_id.split("_")[1].title().replace('Del','del')
                                 m['filename'] = result["filename"]
                                 m['page'] = result["page"]
                                 output.append(m)
@@ -109,7 +118,7 @@ def process(pdf_directory:str, force: bool = typer.Option(False, "--force", help
             if output:
                 df = pd.DataFrame(output)
                 df = df.drop_duplicates()
-
+                print(df)
 
     else:
         typer.echo("Not a valid path, please check and try again.")
