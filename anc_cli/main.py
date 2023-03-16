@@ -6,7 +6,8 @@ from anc_cli.utils import *
 import spacy
 from spacy.matcher import Matcher
 from spaczz.matcher import FuzzyMatcher
-
+from datetime import datetime
+now = datetime.now()
 import yaml
 from rich import print
 
@@ -49,16 +50,16 @@ language = settings['language']
 output_dir = Path('anc_cli/output')
 if not output_dir.exists():
     output_dir.mkdir(parents=True, exist_ok=True)
-existing_data = [f.stem for f in output_dir.iterdir()]
+existing_data = [f.stem for f in output_dir.rglob("*")]
 
 @app.command()
 def process(pdf_directory:str, force: bool = typer.Option(False, "--force", help='Ignore existing data and create new.')):
     pdf_directory = Path(pdf_directory)
     if pdf_directory.exists():
-        print(f"[green] Processing {len(list(pdf_directory.iterdir()))} files [/green]")
+        print(f"[green] Processing {len(list(pdf_directory.rglob('*')))} files [/green]")
 
         data = []
-        for i, file_ in enumerate(pdf_directory.iterdir()):
+        for i, file_ in enumerate(pdf_directory.rglob("*")):
             if file_.suffix == '.pdf' and file_.stem not in existing_data:
                 json_response = pdf_to_data(file_, language, api_key)
                 out_path = str((output_dir / f"{file_.stem}_{i}.json"))
@@ -156,11 +157,22 @@ def process(pdf_directory:str, force: bool = typer.Option(False, "--force", help
                                 # output.append(m)
                                 
             if output:
+                
+                data = []
+                filenames = [e['filename'] for e in output]
+                for filename in set(filenames):
+                    row = {}
+                    row['filename'] = filename.split('/')[-1]
+                    for term in terms:
+                        d = [d['match_name'] for d in output if d["match_term"] == term.title() and d['filename'] == filename]
+                        
+                        if d:
+                            row[term] = d[0]        
+                    data.append(row)        
                 # TODO before DataFrame create rows for pairs of Muni/Depart
-                df = pd.DataFrame(output)
-                df = df.drop_duplicates()
-                print(df)
-                df.to_csv('output.csv')
+                df = pd.DataFrame(data)
+                date_time = now.strftime("%Y-%m-%d-%H:%M:%S")
+                df.to_csv(f'output-{date_time}.csv', index=False)
 
     else:
         typer.echo("Not a valid path, please check and try again.")
