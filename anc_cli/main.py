@@ -176,3 +176,7 @@ def process(pdf_directory:str, force: bool = typer.Option(False, "--force", help
 
     else:
         typer.echo("Not a valid path, please check and try again.")
+
+@app.command()
+def doc_ai(pdf_directory:str):
+    pass
