@@ -180,13 +180,16 @@ def process(pdf_directory:str, force: bool = typer.Option(False, "--force", help
 
 @app.command()
 def docAI(pdf_directory:str):
+    data = []
     if Path(pdf_directory).is_dir():
-        data = []
         for pdf in Path(pdf_directory).glob('*.pdf'):
             typer.echo(f"Processing {pdf}")
             pdf_data = pdf_to_data(pdf)
             data.append(pdf_data)
         typer.echo(f"It's {data} data!")
     else:
-        data = pdf_to_data(pdf_directory)
+        pdf_data = pdf_to_data(pdf_directory)
+        data.append(pdf_data)
         typer.echo(f"It's {data} data!")
+    for item in data:
+        print(item)
