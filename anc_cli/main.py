@@ -10,6 +10,7 @@ from datetime import datetime
 now = datetime.now()
 import yaml
 from rich import print
+from .doc_ai import pdf_to_data
 
 #TODO 
 #1. back to FuzzMatcher
@@ -178,5 +179,14 @@ def process(pdf_directory:str, force: bool = typer.Option(False, "--force", help
         typer.echo("Not a valid path, please check and try again.")
 
 @app.command()
-def doc_ai(pdf_directory:str):
-    pass
+def docAI(pdf_directory:str):
+    if Path(pdf_directory).is_dir():
+        data = []
+        for pdf in Path(pdf_directory).glob('*.pdf'):
+            typer.echo(f"Processing {pdf}")
+            pdf_data = pdf_to_data(pdf)
+            data.append(pdf_data)
+        typer.echo(f"It's {data} data!")
+    else:
+        data = pdf_to_data(pdf_directory)
+        typer.echo(f"It's {data} data!")

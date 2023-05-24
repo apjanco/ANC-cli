@@ -2,6 +2,7 @@
 from google.cloud import documentai_v1 as documentai
 from google.api_core.client_options import ClientOptions
 from typing import List, Sequence
+from pathlib import Path 
 
 PROJECT_ID = "894403265340"
 LOCATION = "us"  # Format is 'us' or 'eu'
@@ -39,32 +40,34 @@ def text_anchor_to_text(text_anchor: documentai.Document.TextAnchor, text: str) 
         response += text[start_index:end_index]
     return response.strip().replace("\n", " ")
 
-docai_client = documentai.DocumentProcessorServiceClient(
-        client_options=ClientOptions(
-            api_endpoint=f"{LOCATION}-documentai.googleapis.com"
+def pdf_to_data(file_path: str) -> List[List[str]]:
+    docai_client = documentai.DocumentProcessorServiceClient(
+            client_options=ClientOptions(
+                api_endpoint=f"{LOCATION}-documentai.googleapis.com"
+            )
         )
-    )
 
-# The full resource name of the processor, e.g.:
-# projects/project-id/locations/location/processor/processor-id
-# You must create new processors in the Cloud Console first
-resource_name = docai_client.processor_path(PROJECT_ID, LOCATION, PROCESSOR_ID)
+    # The full resource name of the processor, e.g.:
+    # projects/project-id/locations/location/processor/processor-id
+    # You must create new processors in the Cloud Console first
+    resource_name = docai_client.processor_path(PROJECT_ID, LOCATION, PROCESSOR_ID)
 
-# Read the file into memory
-with open('brblaa1346701_rollo0001_az0001_01.pdf', "rb") as file:
-    file_content = file.read()
+    # Read the file into memory
+    file_content = Path(file_path).read_bytes()
 
-# Load Binary Data into Document AI RawDocument Object
-raw_document = documentai.RawDocument(content=file_content, mime_type=MIME_TYPE)
+    # Load Binary Data into Document AI RawDocument Object
+    raw_document = documentai.RawDocument(content=file_content, mime_type=MIME_TYPE)
 
-# Configure the process request
-request = documentai.ProcessRequest(name=resource_name, raw_document=raw_document)
+    # Configure the process request
+    request = documentai.ProcessRequest(name=resource_name, raw_document=raw_document)
 
-# Use the Document AI client to process the sample form
-result = docai_client.process_document(request=request)
+    # Use the Document AI client to process the sample form
+    result = docai_client.process_document(request=request)
 
-document = result.document
-for page in document.pages:
-    for table in page.tables:
-        row = get_table_data(table.body_rows, document.text)
-        print(row)
+    document = result.document
+    data = []
+    for page in document.pages:
+        for table in page.tables:
+            row = get_table_data(table.body_rows, document.text)
+            data.append(row)
+    return data
