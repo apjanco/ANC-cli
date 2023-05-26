@@ -5,6 +5,7 @@ from typing import List, Sequence
 from pathlib import Path 
 import spacy 
 from spaczz.matcher import FuzzyMatcher
+import pandas as pd
 
 PROJECT_ID = "894403265340"
 LOCATION = "us"  # Format is 'us' or 'eu'
@@ -110,7 +111,8 @@ def process_data(data: List[dict], terms:list, match_ratio:int, term_matcher, pl
             except IndexError:
                 pass
         for term in terms:
-            data[term] = list(set(data[term]))
+            data[term] = list(set(data[term]))[0]
         result.append(data)
-    print(result)
+    df = pd.DataFrame(result)
+    df.to_csv('result.csv', index=False)
     return result
