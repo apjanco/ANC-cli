@@ -89,10 +89,11 @@ def flatten(lst):
 
 def process_data(data: List[dict], terms:list, match_ratio:int, term_matcher, place_matcher,language:str) -> List[dict]:
     nlp = spacy.blank("es")
+    result = []
     for i, page in enumerate(data):
         f = page['file']
         data = {}
-        data['file'] = f
+        data['file'] = str(f)
         for term in terms:
             data[term] = []
         items = flatten(page['items'])
@@ -101,13 +102,15 @@ def process_data(data: List[dict], terms:list, match_ratio:int, term_matcher, pl
             matches = term_matcher(doc)
             term_match = [match_id for match_id, start, end, ratio in matches if ratio > match_ratio]
             try:
-                data = {}
-                for term in terms:
-                    data[term] = []
                 doc = nlp(items[ix +1 ])
                 matches = place_matcher(doc)
                 place_match = [match_id for match_id, start, end, ratio in matches if ratio > match_ratio]
-                print(term_match[0],'==', place_match[0])
+                data[term_match[0].lower()].append(place_match[0].split('_')[1])
+                #print(term_match[0],'==', place_match[0])
             except IndexError:
                 pass
-            print(data)
+        for term in terms:
+            data[term] = list(set(data[term]))
+        result.append(data)
+    print(result)
+    return result

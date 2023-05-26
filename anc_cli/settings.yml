@@ -2,7 +2,7 @@ language: es
 terms:
   - departamento
   - municipio
-  - DEP.INT.COM.
+  - dep.int.com
   - proponente
 
 match_ratio: 85
