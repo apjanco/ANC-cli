@@ -111,7 +111,9 @@ def process_data(data: List[dict], terms:list, match_ratio:int, term_matcher, pl
             except IndexError:
                 pass
         for term in terms:
-            data[term] = list(set(data[term]))[0]
+            termz = list(set(data[term]))
+            if termz:
+                data[term] = list(set(data[term]))[0]
         result.append(data)
     df = pd.DataFrame(result)
     df.to_csv('result.csv', index=False)
