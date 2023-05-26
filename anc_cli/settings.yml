@@ -4,3 +4,6 @@ terms:
   - municipio
   - DEP.INT.COM.
   - proponente
+
+match_ratio: 85
+language: es

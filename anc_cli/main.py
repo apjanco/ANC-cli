@@ -10,7 +10,7 @@ from datetime import datetime
 now = datetime.now()
 import yaml
 from rich import print
-from .doc_ai import pdf_to_data
+from .doc_ai import pdf_to_data, process_data
 
 #TODO 
 #1. back to FuzzMatcher
@@ -44,8 +44,11 @@ for departamento in departamentos:
 #     place_matcher.add('departamento_'+departamento, [pattern])
 
 terms = settings['terms']
-print(terms)
-match_ratio = 85
+match_ratio = settings['match_ratio']
+
+term_matcher = FuzzyMatcher(nlp.vocab)
+for term in terms:
+    term_matcher.add(term.upper(), [nlp(term)])
 
 language = settings['language']
 output_dir = Path('anc_cli/output')
@@ -186,10 +189,8 @@ def docAI(pdf_directory:str):
             typer.echo(f"Processing {pdf}")
             pdf_data = pdf_to_data(pdf)
             data.append(pdf_data)
-        typer.echo(f"It's {data} data!")
     else:
         pdf_data = pdf_to_data(pdf_directory)
         data.append(pdf_data)
-        typer.echo(f"It's {data} data!")
-    for item in data:
-        print(item)
+    process_data(data, terms, match_ratio, term_matcher, place_matcher, language)
+    

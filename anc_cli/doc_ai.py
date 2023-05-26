@@ -3,6 +3,8 @@ from google.cloud import documentai_v1 as documentai
 from google.api_core.client_options import ClientOptions
 from typing import List, Sequence
 from pathlib import Path 
+import spacy 
+from spaczz.matcher import FuzzyMatcher
 
 PROJECT_ID = "894403265340"
 LOCATION = "us"  # Format is 'us' or 'eu'
@@ -65,9 +67,47 @@ def pdf_to_data(file_path: str) -> List[List[str]]:
     result = docai_client.process_document(request=request)
 
     document = result.document
-    data = []
+    data = {}
+    data['file'] = file_path
+    data['text'] = document.text
+    data['items'] = []
     for page in document.pages:
         for table in page.tables:
             row = get_table_data(table.body_rows, document.text)
-            data.append(row)
+            data['items'].append(row)
     return data
+
+# Flatten list using a recursive function
+def flatten(lst):
+    flattened = []
+    for i in lst:
+        if isinstance(i, list):
+            flattened.extend(flatten(i))
+        else:
+            flattened.append(i)
+    return flattened
+
+def process_data(data: List[dict], terms:list, match_ratio:int, term_matcher, place_matcher,language:str) -> List[dict]:
+    nlp = spacy.blank("es")
+    for i, page in enumerate(data):
+        f = page['file']
+        data = {}
+        data['file'] = f
+        for term in terms:
+            data[term] = []
+        items = flatten(page['items'])
+        for ix, item in enumerate(items):
+            doc = nlp(item)
+            matches = term_matcher(doc)
+            term_match = [match_id for match_id, start, end, ratio in matches if ratio > match_ratio]
+            try:
+                data = {}
+                for term in terms:
+                    data[term] = []
+                doc = nlp(items[ix +1 ])
+                matches = place_matcher(doc)
+                place_match = [match_id for match_id, start, end, ratio in matches if ratio > match_ratio]
+                print(term_match[0],'==', place_match[0])
+            except IndexError:
+                pass
+            print(data)
