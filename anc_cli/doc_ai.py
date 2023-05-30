@@ -6,6 +6,8 @@ from pathlib import Path
 import spacy 
 from spaczz.matcher import FuzzyMatcher
 import pandas as pd
+import yaml 
+import numpy as np
 
 PROJECT_ID = "894403265340"
 LOCATION = "us"  # Format is 'us' or 'eu'
@@ -44,6 +46,12 @@ def text_anchor_to_text(text_anchor: documentai.Document.TextAnchor, text: str) 
     return response.strip().replace("\n", " ")
 
 def pdf_to_data(file_path: str) -> List[List[str]]:
+    settings = yaml.load(Path('anc_cli/settings.yml').read_text(), Loader=yaml.Loader)
+    save_path = settings.get('save_path', None)
+    if not (Path.cwd() / save_path).exists():
+        (Path.cwd() / save_path).mkdir()
+    save_path = Path.cwd() / save_path
+
     docai_client = documentai.DocumentProcessorServiceClient(
             client_options=ClientOptions(
                 api_endpoint=f"{LOCATION}-documentai.googleapis.com"
@@ -70,7 +78,9 @@ def pdf_to_data(file_path: str) -> List[List[str]]:
     document = result.document
     data = {}
     data['file'] = file_path
+    save_file = str(file_path).split('.')[0].split('/')[-1]
     data['text'] = document.text
+    (save_path / f'{save_file}_text.txt').write_text(document.text)
     data['items'] = []
     for page in document.pages:
         for table in page.tables:
@@ -116,5 +126,12 @@ def process_data(data: List[dict], terms:list, match_ratio:int, term_matcher, pl
                 data[term] = list(set(data[term]))[0]
         result.append(data)
     df = pd.DataFrame(result)
-    df.to_csv('result.csv', index=False)
+    settings = yaml.load(Path('anc_cli/settings.yml').read_text(), Loader=yaml.Loader)
+    save_path = settings.get('save_path', None)
+    if not (Path.cwd() / save_path).exists():
+        (Path.cwd() / save_path).mkdir()
+    save_path = Path.cwd() / save_path
+    save_file = data["file"].split('.')[0].split('/')[-1]
+    df = df.apply(lambda x: x.str.strip()).replace('[]', np.nan)
+    df.to_csv(f'{str(save_path)}/{save_file}.csv', index=False)
     return result

@@ -7,3 +7,4 @@ terms:
 
 match_ratio: 85
 language: es
+save_path: anc_data/
