@@ -1,3 +1,9 @@
+#TODO add escriptorium-connector, Typer cli
+# 1 fetch images from local, process and push to eScriptorium
+# 2 fetch images/transcriptions from eScriptorium, process and push changes
+# 3 ask which they prefer? 
+# 4 also need batch export of text from eScriptorium (or already exists? What form is best for them?)
+
 import json
 from xml.etree.ElementTree import Element, SubElement, tostring
 
